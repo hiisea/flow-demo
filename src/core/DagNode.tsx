@@ -40,6 +40,7 @@ export class DagNode extends React.Component<{ node?: Node }> {
           lineHeight: "30px",
           boxSizing: "border-box",
           border: "2px solid #000",
+          background: "#FFF"
         }}
       >
         <nodeConfig.component node={node} />
@@ -63,7 +64,6 @@ Graph.registerEdge(
         strokeWidth: 1,
       },
     },
-    zIndex: -1,
   },
   true
 );

@@ -1,9 +1,6 @@
 .app {
   font-family: sans-serif;
 }
-.x6-edge{
-  z-index: -1;
-}
 .x6-node-selected .dag-node {
   border-color: #1890ff;
   border-radius: 2px;

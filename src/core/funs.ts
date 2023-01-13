@@ -1,14 +1,7 @@
-import { Cell, Graph, Node, Edge, StringExt } from "@antv/x6";
-import dagre from "dagre";
+import { Cell, Graph, Node, StringExt } from "@antv/x6";
 import { getConfig } from "./base";
+import { Dagre, DagreConfig } from "./dagre";
 
-var g = new dagre.graphlib.Graph();
-g.setGraph({});
-g.setDefaultEdgeLabel(function () {
-  return {};
-});
-
-g.setNode("kspacey", { label: "Kevin Spacey", width: 200, height: 40 });
 //g.setNode("swilliams",  { label: "Saul Williams", width: 160, height: 100 });
 // g.setNode("bpitt",      { label: "Brad Pitt",     width: 108, height: 100 });
 // g.setNode("hford",      { label: "Harrison Ford", width: 168, height: 100 });
@@ -22,15 +15,7 @@ g.setNode("kspacey", { label: "Kevin Spacey", width: 200, height: 40 });
 // g.setEdge("hford",     "lwilson");
 // g.setEdge("lwilson",   "kbacon");
 
-dagre.layout(g);
-
-g.nodes().forEach(function (v: any) {
-  console.log("Node " + v + ": " + JSON.stringify(g.node(v)));
-});
-
 let uid = 1;
-const MARGIN_X = 40;
-const MARGIN_Y = 80;
 
 // function listToTree(nodeList: Node[]) {
 //   //const root: {node: Node, children: Node[]} = {node: nodeList[0], children:[]};
@@ -47,11 +32,7 @@ const MARGIN_Y = 80;
 // }
 
 function layoutSize(parentNode: Node) {
-  const g = new dagre.graphlib.Graph() as any;
-  g.setGraph({ marginx: MARGIN_X, marginy: MARGIN_Y });
-  g.setDefaultEdgeLabel(function () {
-    return {};
-  });
+  const g = new Dagre();
   const children = parentNode.getChildren() || [];
   const childrenNodes: Node[] = [];
   children.forEach((cell) => {
@@ -61,35 +42,47 @@ function layoutSize(parentNode: Node) {
         layoutSize(cell);
       }
       const size = cell.getSize();
-      g.setNode(cell.id, { ...size });
+      g.setNode({ id: cell.id, ...size });
     } else {
       const edge = {
         source: (cell as any).source.cell,
         target: (cell as any).target.cell,
       };
-      if(edge.source !== parentNode.id && edge.target !== parentNode.id){
+      if (edge.source !== parentNode.id && edge.target !== parentNode.id) {
         g.setEdge(edge.source, edge.target);
       }
     }
   });
-  dagre.layout(g);
-  let width = MARGIN_X;
-  let height = MARGIN_Y;
+
+  //   console.log("========");
+  //   if (parentNode.id && parentNode.id.startsWith("Choice")) {
+  //     g.nodes().forEach(function (v: any) {
+  //       console.log("Node " + v + ": " + JSON.stringify(g.node(v)));
+  //     });
+  //     g.edges().forEach(function (e: any) {
+  //       console.log(
+  //         "Edge " + e.v + " -> " + e.w + ": " + JSON.stringify(g.edge(e))
+  //       );
+  //     });
+  //   }
+  let width = DagreConfig.marginx;
+  let height = DagreConfig.marginy;
   childrenNodes.forEach((node) => {
     const size = node.getSize();
-    const posOrigin = g.node(node.id);
+    const posOrigin = g.getLayout(node.id);
     const pos = {
       x: posOrigin.x - size.width / 2,
       y: posOrigin.y - size.height / 2,
     };
-    width = Math.max(width, pos.x + size.width + MARGIN_X);
-    height = Math.max(height, pos.y + size.height + MARGIN_Y);
+    width = Math.max(width, pos.x + size.width + DagreConfig.marginx);
+    height = Math.max(height, pos.y + size.height + DagreConfig.marginy);
     node.setAttrs({
       body: {
         pos: [pos.x, pos.y].join(","),
       },
     });
   });
+  //console.log(parentNode.id, 'size', g.graph(), { width, height })
   parentNode.setSize({ width, height });
 }
 
@@ -112,11 +105,50 @@ function layoutPosition(parentNode: Node) {
   });
 }
 
+function layoutIndex(graph: Graph, sourceNode: Node, indexMap: {[key:string]: number}) {
+  const zIndex = sourceNode.getZIndex() || 0;
+  const outEdges = graph.getOutgoingEdges(sourceNode) || [];
+  console.log(outEdges);
+  outEdges.forEach((edge) => {
+    if ((edge.source as any).port === "out") {
+      console.log(
+        (edge.source as any).cell,
+        "->",
+        (edge.target as any).cell,
+        " = ",
+        zIndex - 1
+      );
+      edge.setZIndex(zIndex - 1);
+    } else {
+      console.log(
+        (edge.source as any).cell,
+        "->",
+        (edge.target as any).cell,
+        " = ",
+        zIndex + 1
+      );
+      edge.setZIndex(zIndex + 1);
+    }
+    const nextNode = edge.getTargetNode() as Node;
+    if (sourceNode.getParent() !== nextNode) {
+      console.log(nextNode.id, "=", zIndex + 2);
+      nextNode.setZIndex(zIndex + 2);
+      layoutIndex(graph, nextNode, indexMap);
+    } else {
+      console.log("忽略", nextNode.id);
+    }
+  });
+}
+
 export function updateLayout(graph: Graph) {
   const children: Cell[] = [];
+  let rootNode: Node;
   graph.getCells().forEach((node) => {
     if (!node.hasParent()) {
       children.push(node);
+      if(!rootNode && node.isNode()){
+        rootNode = node;
+      }
     }
   });
   const root: Node = {
@@ -130,32 +162,11 @@ export function updateLayout(graph: Graph) {
       return children;
     },
   } as any;
+  const indexMap = {};
+  layoutIndex(graph, rootNode!, indexMap);
+  console.log(indexMap);
   layoutSize(root);
   layoutPosition(root);
-  //   graph.getNodes().forEach((node) => {
-  //     const size = node.getSize();
-  //     const pos: any = (node.getAttrs().body.pos as any)
-  //       .split(",")
-  //       .map((n: string) => parseInt(n));
-  //     node.setPosition({
-  //       x: pos[0] - size.width / 2,
-  //       y: pos[1] - size.height / 2,
-  //     });
-  //   });
-  //   const g = new dagre.graphlib.Graph() as any;
-  //   g.setGraph({ marginx: 20, marginy: 20 });
-  //   g.setDefaultEdgeLabel(function () {
-  //     return {};
-  //   });
-  //   graph.getNodes().forEach((node) => {
-  //     const size = node.getSize();
-  //     g.setNode(node.id, size);
-  //     console.log(node.id, node.getChildren());
-  //   });
-  //   graph.getEdges().forEach((edge) => {
-  //     g.setEdge((edge.source as any).cell, (edge.target as any).cell);
-  //   });
-  //   dagre.layout(g);
 }
 
 export function createNode(
@@ -178,6 +189,13 @@ export function createNode(
       type,
       name,
     },
+    tools: {
+      name: "button-remove",
+      args: {
+        x: 12,
+        y: 15,
+      },
+    },
   });
   if (newNodeType === "Switch") {
     const targetEdge1 = graph.addEdge({
@@ -192,20 +210,20 @@ export function createNode(
       },
     });
     const targetEdge2 = graph.addEdge({
-        shape: "dag-edge",
-        source: {
-          cell: targetNode,
-          port: "out",
-        },
-        target: {
-          cell: sourceNode,
-          port: "out",
-        },
-      });
+      shape: "dag-edge",
+      source: {
+        cell: targetNode,
+        port: "out",
+      },
+      target: {
+        cell: sourceNode,
+        port: "out",
+      },
+    });
     sourceNode.addChild(targetNode);
     sourceNode.addChild(targetEdge1);
     sourceNode.addChild(targetEdge2);
-    updateLayout(graph);
+    //updateLayout(graph);
     return targetNode;
   }
   const [originEdge] = (graph.getOutgoingEdges(sourceNode) || []).filter(
@@ -228,14 +246,14 @@ export function createNode(
     },
   });
   if (originEdge) {
-    originEdge.setSource({cell: targetNode, port: 'out'});
+    originEdge.setSource({ cell: targetNode.id, port: "out" });
   }
   const parent = sourceNode.getParent();
   if (parent) {
     parent.addChild(targetNode);
     parent.addChild(targetEdge);
   }
-  updateLayout(graph);
+  //updateLayout(graph);
   return targetNode;
 }
 export function initGraph(container: any, data: { nodes: Array<any> }) {
@@ -261,6 +279,13 @@ export function initGraph(container: any, data: { nodes: Array<any> }) {
   });
   graph.fromJSON(data);
   updateLayout(graph);
+  graph.on("node:added", () => {
+    console.log(11111);
+    setTimeout(() => updateLayout(graph), 0);
+  });
+  graph.on("node:removed", () => {
+    setTimeout(() => updateLayout(graph), 0);
+  });
   // graph.on("cell:mouseenter", ({ cell }) => {
   //   if (cell.isNode()) {
   //     cell.addTools([

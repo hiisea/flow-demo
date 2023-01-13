@@ -13,9 +13,11 @@
     "antd": "^5",
     "@antv/x6": "1.x",
     "@antv/x6-react-shape":"^1.0.0",
-    "dagre": "latest"
+    "dagre":"0.8.5",
+    "patch-package":"^6.5.1"
   },
   "scripts": {
+    "postinstall": "patch-package",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
