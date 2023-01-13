@@ -1,8 +1,10 @@
 import { FC } from "react";
 import { Node, StringExt } from "@antv/x6";
 import ChoiceConfig from "../nodes/Choice";
-import LoopConfig from "../nodes/Loop";
 import SwitchConfig from "../nodes/Switch";
+import LoopConfig from "../nodes/Loop";
+import StartConfig from "../nodes/Start";
+
 import DataProcessingConfig from "../nodes/DataProcessing";
 
 export interface BaseNodeModel {
@@ -46,12 +48,13 @@ export async function loadConfig(): Promise<Config> {
     Choice: ChoiceConfig,
     Switch: SwitchConfig,
     Loop: LoopConfig,
+    Start: StartConfig,
     DataProcessing: DataProcessingConfig,
   };
   return config;
 }
 export async function loadData(): Promise<{ nodes: Array<any> }> {
-  const id = "DataProcessing-" + StringExt.uuid() + "-0";
+  const id = "DataProcessing-0";
   return {
     nodes: [
       {
@@ -59,9 +62,6 @@ export async function loadData(): Promise<{ nodes: Array<any> }> {
         shape: "dag-node",
         width: 250,
         height: 40,
-        x: 10,
-        y: 10,
-        zIndex: 2,
         data: {
           id,
           type: "DataProcessing",

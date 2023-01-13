@@ -14,7 +14,8 @@
     "@antv/x6": "1.x",
     "@antv/x6-react-shape":"^1.0.0",
     "dagre":"0.8.5",
-    "patch-package":"^6.5.1"
+    "patch-package":"^6.5.1",
+    "lodash.debounce": "^4.0.8"
   },
   "scripts": {
     "postinstall": "patch-package",

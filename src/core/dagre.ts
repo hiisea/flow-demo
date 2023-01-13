@@ -18,7 +18,7 @@ type OutputEdgeData = { source: string; target: string };
 export const DagreConfig = {
   //ranker: "longest-path",
   marginx: 40,
-  marginy: 80,
+  marginy: 50,
 }
 
 export class Dagre {

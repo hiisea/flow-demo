@@ -40,7 +40,7 @@ export class DagNode extends React.Component<{ node?: Node }> {
           lineHeight: "30px",
           boxSizing: "border-box",
           border: "2px solid #000",
-          background: "#FFF"
+          background: 'rgba(255,255,145,0.5)'
         }}
       >
         <nodeConfig.component node={node} />
@@ -60,7 +60,7 @@ Graph.registerEdge(
     },
     attrs: {
       line: {
-        stroke: "#C2C8D5",
+        stroke: "#999",
         strokeWidth: 1,
       },
     },
