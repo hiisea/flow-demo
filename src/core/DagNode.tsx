@@ -1,54 +1,52 @@
 import React from "react";
 import classnames from "classnames";
 import { Graph, Node } from "@antv/x6";
-import { BaseNodeModel, getConfig } from "./base";
 import "@antv/x6-react-shape";
+import { BaseNodeModel, getConfig } from "./base";
 
-// export const MyComponent = memo(
-//   ({ node, text }: { node?: ReactShape; text: string }) => {
-//     return // ...
-//   },
-//   (prev, next) => {
-//     return Boolean(next.node?.hasChanged('data'))
-//   },
-// )
-
-export class DagNode extends React.Component<{ node?: Node }> {
-  shouldComponentUpdate() {
-    const { node } = this.props;
-    if (node) {
-      if (node.hasChanged("data")) {
-        return true;
-      }
+export const DagNode = React.memo(
+  ({ node }: { node?: Node }) => {
+    if (!node) {
+      return null;
     }
-    return false;
-  }
-
-  render() {
-    const node = this.props.node!;
     const model = node.getData() as BaseNodeModel;
     const nodeMetas = getConfig("nodeMetas");
     const nodeConfig = nodeMetas[model.type];
-
     return (
-      <div
-        className={`dag-node`}
-        style={{
-          width: "100%",
-          height: "100%",
-          textAlign: "center",
-          lineHeight: "30px",
-          boxSizing: "border-box",
-          border: "2px solid #000",
-          background: 'rgba(255,255,145,0.5)'
-        }}
-      >
-        <nodeConfig.component node={node} />
-        <i data-event="node:createNextNode" className="xcustom-plus-dag" />
-      </div>
+      <>
+        <div className={classnames("xdag-node", `xdag-${model.type}`)}>
+          <nodeConfig.component node={node} />
+        </div>
+        <div data-event="node:createNextNode" className="xdag-plus-dag" />
+      </>
     );
+  },
+  (prev, next) => {
+    return Boolean(next.node?.hasChanged("data"));
   }
-}
+);
+
+// export class DagNode extends React.Component<{ node?: Node }> {
+//   shouldComponentUpdate() {
+//     return Boolean(this.props.node?.hasChanged('data'))
+//   }
+
+//   render() {
+//     const node = this.props.node!;
+//     const model = node.getData() as BaseNodeModel;
+//     const nodeMetas = getConfig("nodeMetas");
+//     const nodeConfig = nodeMetas[model.type];
+
+//     return (
+//       <div
+//         className={classnames("xdag-dag-node", `xdag-node-${model.type}`)}
+//       >
+//         <nodeConfig.component node={node} />
+//         <div data-event="node:createNextNode" className="xdag-plus-dag" />
+//       </div>
+//     );
+//   }
+// }
 
 Graph.registerEdge(
   "dag-edge",
@@ -60,7 +58,7 @@ Graph.registerEdge(
     },
     attrs: {
       line: {
-        stroke: "#999",
+        stroke: "#666",
         strokeWidth: 1,
       },
     },

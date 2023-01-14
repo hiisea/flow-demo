@@ -1,11 +1,11 @@
-import {NodeConfig}  from '../../core';
+import {NodeOptions}  from '../../core';
 import Node from './Node';
 
-const nodeConfig: NodeConfig = {
+const nodeOptions: NodeOptions = {
   type: 'Start',
-  name: '开始执行',
-  hidden: true,
-  nodeSize: { width: 200, height: 40 },
+  name: '开始',
   component: Node,
+  nodeSize: { width: 400, height: 40 },
+  hidden: true,
 }
-export default nodeConfig;
+export default nodeOptions;

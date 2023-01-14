@@ -17,9 +17,10 @@ type OutputEdgeData = { source: string; target: string };
 
 export const DagreConfig = {
   //ranker: "longest-path",
-  marginx: 40,
-  marginy: 50,
-}
+  // marginx: 40,
+  // marginy: 60,
+  //rankdir: 'LR'
+};
 
 export class Dagre {
   private graph: any;
@@ -47,9 +48,9 @@ export class Dagre {
     this.graph.setEdge(source, target);
   }
 
-  getLayout(): {nodes: OutputNodeData[], edges: OutputEdgeData[]};
-  getLayout(id:string): OutputNodeData;
-  getLayout(id?:string) :any {
+  getLayout(): { nodes: OutputNodeData[]; edges: OutputEdgeData[] };
+  getLayout(id: string): OutputNodeData;
+  getLayout(id?: string): any {
     if (!this.outputNodes) {
       dagre.layout(this.graph);
       this.outputNodes = this.graph
@@ -58,12 +59,12 @@ export class Dagre {
       this.outputEdges = this.graph
         .edges()
         .map((edge: any) => ({ source: edge.v, target: edge.w }));
-      this.outputNodesMap = this.outputNodes!.reduce((obj, cur)=>{
+      this.outputNodesMap = this.outputNodes!.reduce((obj, cur) => {
         obj[cur.id] = cur;
         return obj;
       }, {} as any);
     }
-    if(id){
+    if (id) {
       return this.outputNodesMap![id];
     }
     return { nodes: this.outputNodes, edges: this.outputEdges };

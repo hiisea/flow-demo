@@ -1,5 +1,5 @@
 import { Cell, Graph, Node, StringExt } from "@antv/x6";
-import { getConfig } from "./base";
+import { getConfig, INode } from "./base";
 import { Dagre, DagreConfig } from "./dagre";
 import debounce from "lodash.debounce";
 
@@ -69,17 +69,26 @@ function layoutSize(
   //       );
   //     });
   //   }
-  let width = DagreConfig.marginx;
-  let height = DagreConfig.marginy;
+  const nodeMetas = getConfig("nodeMetas");
+  const parentType = parentNode.getData().type;
+  const { nodeSize } = nodeMetas[parentType];
+  const {
+    paddingTop = 50,
+    paddingBottom = 50,
+    paddingLeft = 40,
+    paddingRight = 40,
+  } = nodeSize;
+  let width = 0;
+  let height = 0;
   childrenNodes.forEach((node) => {
     const size = node.getSize();
     const posOrigin = g.getLayout(node.id);
     const pos = {
-      x: posOrigin.x - size.width / 2,
-      y: posOrigin.y - size.height / 2,
+      x: paddingLeft + posOrigin.x - size.width / 2,
+      y: paddingTop + posOrigin.y - size.height / 2,
     };
-    width = Math.max(width, pos.x + size.width + DagreConfig.marginx);
-    height = Math.max(height, pos.y + size.height + DagreConfig.marginy);
+    width = Math.max(width, pos.x + size.width + paddingRight);
+    height = Math.max(height, pos.y + size.height + paddingBottom);
     //node.setProp("pos", [pos.x, pos.y], { silent: true });
     posMap[node.id] = { ...pos };
   });
@@ -165,6 +174,11 @@ export const updateLayout: (graph: Graph) => void = debounce((graph: Graph) => {
     }
   });
   const root: Node = {
+    getData() {
+      return {
+        type: "Root",
+      };
+    },
     setSize() {
       return;
     },
@@ -199,7 +213,7 @@ export const updateLayout: (graph: Graph) => void = debounce((graph: Graph) => {
       return obj;
     }, {} as any);
   graph.getCells().forEach((cell) => {
-    console.log(cell.id, "zindex", indexMap[cell.id] + 1);
+    //console.log(cell.id, "zindex", indexMap[cell.id] + 1);
     cell.setZIndex(indexMap[cell.id] + 1);
   });
   layoutSize(root, posMap);
@@ -211,16 +225,20 @@ export function createNode(
   graph: Graph,
   sourceNode: Node,
   newNodeType: string,
-  newNodeData: Record<string, any> = {},
+  newNodeData: Record<string, any> = {}
 ): Node {
   const nodeMetas = getConfig("nodeMetas");
-  const { nodeSize, type, name } = nodeMetas[newNodeType];
+  const {
+    nodeSize,
+    type,
+    name,
+    tools = [],
+    afterCreate,
+  } = nodeMetas[newNodeType];
   const id = `${newNodeType}-${uid++}`;
   const targetNode = graph.addNode({
     id,
     shape: "dag-node",
-    x: 0,
-    y: 0,
     width: nodeSize.width,
     height: nodeSize.height,
     data: {
@@ -237,43 +255,7 @@ export function createNode(
           y: 15,
         },
       },
-      // {
-      //   name: "button",
-      //   args: {
-      //     x: '50%',
-      //     y: '0%',
-      //     offset: { x: -44, y: 10},
-      //     markup: [
-      //       {
-      //         tagName: "rect",
-      //         selector: "body",
-      //         attrs: {
-      //           width: 90,
-      //           height: 30,
-      //           rx: 6,
-      //           ry: 6,
-      //           stroke: "#fe854f",
-      //           strokeWidth: 1,
-      //           fill: "white",
-      //           cursor: "pointer",
-      //         },
-      //       },
-      //       {
-      //         tagName: 'text',
-      //         selector: 'label',
-      //         textContent: '+ 添加条件',
-      //         attrs: {
-      //           fill: '#fe854f',
-      //           fontSize: 15,
-      //           textAnchor: 'middle',
-      //           pointerEvents: 'none',
-      //           x: 0,
-      //           dy: '0.3em',
-      //         },
-      //       },
-      //     ],
-      //   },
-      // },
+      ...tools,
     ],
   });
   if (newNodeType === "Switch" || newNodeType === "Start") {
@@ -332,13 +314,7 @@ export function createNode(
     parent.addChild(targetNode);
     parent.addChild(targetEdge);
   }
-  //updateLayout(graph);
-  if (newNodeType === "Choice") {
-    createNode(graph, targetNode, "Switch");
-    createNode(graph, targetNode, "Switch");
-  }else if (newNodeType === "Loop") {
-    createNode(graph, targetNode, "Start", {name: '开始循环'});
-  }
+  afterCreate && afterCreate(targetNode, graph);
   return targetNode;
 }
 export function initGraph(container: any, data: { nodes: Array<any> }) {
@@ -354,10 +330,11 @@ export function initGraph(container: any, data: { nodes: Array<any> }) {
     connecting: {
       allowBlank: false,
       router: {
-        name: "er",
+        name: "manhattan",
         args: {
-          offset: "center",
-          direction: "V",
+          padding: 20,
+          startDirections: ["bottom"],
+          endDirections: ["top"],
         },
       },
     },
@@ -366,7 +343,7 @@ export function initGraph(container: any, data: { nodes: Array<any> }) {
   updateLayout(graph);
   graph.on("node:added", () => {
     console.log(11111);
-    updateLayout(graph)
+    updateLayout(graph);
   });
   graph.on("node:removed", () => {
     updateLayout(graph);
@@ -441,4 +418,23 @@ export function initGraph(container: any, data: { nodes: Array<any> }) {
   //   cell.removeTools();
   // });
   return graph;
+}
+export async function loadData(): Promise<{ nodes: INode[] }> {
+  const id = "DataProcessing-0";
+  return {
+    nodes: [
+      {
+        id,
+        shape: "dag-node",
+        width: 250,
+        height: 40,
+        version: 0,
+        data: {
+          id,
+          type: "DataProcessing",
+          name: "数据加工",
+        },
+      },
+    ],
+  };
 }

@@ -1,12 +1,17 @@
-.app {
-  font-family: sans-serif;
+.xdag-node{
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  border: 2px solid #000;
+  border-radius: 5px;
+  line-height: 36px;
+  background: rgb(255, 255, 255);
 }
-.x6-node-selected .dag-node {
-  border-color: #1890ff;
-  border-radius: 2px;
+.x6-node-selected .xdag-node {
   box-shadow: 0 0 0 4px #d4e8fe;
 }
-.xcustom-plus-dag {
+.xdag-plus-dag {
   /* visibility: hidden; */
   position: absolute;
   margin-left: -8px;
@@ -18,7 +23,7 @@
     no-repeat center center / 100% 100%;
   cursor: pointer;
 }
-.xcustom-plus-switch{
+.xdag-plus-switch{
   position: absolute;
   cursor: pointer;
   color: #1890ff;
@@ -29,4 +34,12 @@
   border-radius: 10px;
   padding: 5px 10px;
 }
-
+.xdag-Choice{
+  border: none;
+  border-color: #70db9b;
+  background: rgba(171, 255, 150, 0);
+}
+.xdag-Loop{
+  border-color: #dbdb70;
+  background: rgba(255, 255, 150, 0.5);
+}

@@ -5,7 +5,7 @@ const Component: NodeComponent = ({ node }) => {
 
   const model = node.getData() as Model;
 
-  return <div>{`${model.name}`}</div>;
+  return <>{`${model.name}`}</>;
 };
 
 export default Component;

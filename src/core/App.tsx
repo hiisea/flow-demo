@@ -1,21 +1,12 @@
 import React from "react";
-import { Graph, Cell, Node, StringExt } from "@antv/x6";
-
+import { Graph, Cell, Node } from "@antv/x6";
 import { Button, Layout } from "antd";
-import {
-  getConfig,
-  NodeOptionsForm,
-  loadConfig,
-  loadData,
-  BaseNodeModel,
-} from "./base";
-import { initGraph, createNode, updateLayout } from "./funs";
+import { loadConfig } from "./base";
+import { initGraph, createNode, updateLayout, loadData } from "./funs";
 import NewNodeSelector from "./NewNodeSelector";
 import NodeProperty from "./NodeProperty";
 import "./DagNode";
 import "./index.css";
-
-
 
 // g.setNode("kspacey",    { label: "Kevin Spacey",  width: 144, height: 100 });
 // g.setNode("swilliams",  { label: "Saul Williams", width: 160, height: 100 });
@@ -56,86 +47,6 @@ export default class Component extends React.Component<{}, State> {
     this.container = container;
   };
 
-  // private createSwitchNode(parentNode: Node){
-  //   const newNodeType = 'Switch';
-  //   const nodeMetas = getConfig("nodeMetas");
-  //   const { nodeSize, type, name } = nodeMetas[newNodeType];
-  //   const id = `${newNodeType}-${StringExt.uuid()}-${uid++}`;
-  //   const position = parentNode.getPosition()
-  //   const child = this.graph.addNode({
-  //     id,
-  //     shape: "dag-node",
-  //     x: position.x,
-  //     y: position.y,
-  //     width: nodeSize.width,
-  //     height: nodeSize.height,
-  //     data: {
-  //       id,
-  //       type,
-  //       name,
-  //     },
-  //   })
-  //   this.graph.addEdge({
-  //     shape: "dag-edge",
-  //     source: {
-  //       cell: parentNode,
-  //       port: "in",
-  //     },
-  //     target: {
-  //       cell: child,
-  //       port: "in",
-  //     },
-  //   })
-  //   parentNode.addChild(child);
-  // }
-  // private createNode(
-  //   sourceNode: Node,
-  //   newNodeType: string,
-  //   newNodeOptions: { [key: string]: any }
-  // ) {
-  //   const [originEdge] = this.graph.getOutgoingEdges(sourceNode) || [];
-  //   console.log("edge", originEdge);
-  //   const originNextNode = originEdge?.getTargetNode();
-  //   console.log("node", originNextNode);
-  //   const position = this.computeNewNodePosition(sourceNode);
-  //   const nodeMetas = getConfig("nodeMetas");
-  //   const { nodeSize, type, name } = nodeMetas[newNodeType];
-  //   const id = `${newNodeType}-${StringExt.uuid()}-${uid++}`;
-  //   const targetNode = this.graph.addNode({
-  //     id,
-  //     shape: "dag-node",
-  //     x: position.x,
-  //     y: position.y,
-  //     width: nodeSize.width,
-  //     height: nodeSize.height,
-  //     data: {
-  //       id,
-  //       type,
-  //       name,
-  //       ...newNodeOptions,
-  //     },
-  //   });
-  //   this.graph.addEdge({
-  //     //id: `${sourceNode.id}->${targetNode.id}`,
-  //     shape: "dag-edge",
-  //     source: {
-  //       cell: sourceNode,
-  //       port: "out",
-  //     },
-  //     target: {
-  //       cell: targetNode,
-  //       port: "in",
-  //     },
-  //   });
-  //   if (originEdge) {
-  //     originEdge.setSource(targetNode);
-  //   }
-  //   const parent = sourceNode.getParent();
-  //   if(parent){
-  //     parent.addChild(targetNode);
-  //   }
-  //   this.updateLayout();
-  // }
   private onNodeSelectorCancel = () => {
     this.setState({ curNodeOnCreate: undefined });
   };
@@ -144,13 +55,12 @@ export default class Component extends React.Component<{}, State> {
     this.setState({ curNodeOnCreate: undefined });
     createNode(this.graph, sourceNode, nodeType);
   };
-  
-  
+
   private getData = () => {
     const data = this.graph.toJSON();
     console.log(data);
   };
-  
+
   componentDidMount() {
     Promise.all([loadConfig(), loadData()]).then(([config, data]) => {
       this.graph = initGraph(this.container, data);
@@ -158,7 +68,7 @@ export default class Component extends React.Component<{}, State> {
         this.setState({ curNodeOnCreate: node });
       });
       this.graph.on("node:createSwitchNode", ({ node }: { node: Node }) => {
-        createNode(this.graph, node, 'Switch');
+        createNode(this.graph, node, "Switch");
       });
       this.graph.on(
         "node:selected",
@@ -181,7 +91,7 @@ export default class Component extends React.Component<{}, State> {
         <Layout style={{ height: "100vh", display: "flex" }}>
           <Header>
             <Button onClick={this.getData}>获取数据</Button>
-            <Button onClick={()=>updateLayout(this.graph)}>重新布局</Button>
+            <Button onClick={() => updateLayout(this.graph)}>重新布局</Button>
           </Header>
           <Layout>
             <Content ref={this.refContainer}></Content>

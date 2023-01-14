@@ -1,10 +1,13 @@
-import {NodeConfig}  from '../../core';
+import {NodeOptions, createNode}  from '../../core';
 import Node from './Node';
 
-const nodeConfig: NodeConfig = {
+const nodeOptions: NodeOptions = {
   type: 'Loop',
   name: '循环体',
-  nodeSize: { width: 500, height: 400 },
   component: Node,
+  nodeSize: {width: 200, height:100, paddingBottom: 80 },
+  afterCreate: (node, graph) => {
+    createNode(graph, node, "Start", {name: '开始循环'});
+  }
 }
-export default nodeConfig;
+export default nodeOptions;

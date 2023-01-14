@@ -1,13 +1,11 @@
-import {NodeConfig}  from '../../core';
+import {NodeOptions}  from '../../core';
 import Node from './Node';
-import PropertyForm from './PropertyForm';
 
-const nodeConfig: NodeConfig = {
+const nodeOptions: NodeOptions = {
   type: 'Switch',
-  name: '条件分支',
-  hidden: true,
-  nodeSize: { width: 200, height: 40 },
+  name: '分支',
   component: Node,
-  propertyForm: PropertyForm
+  nodeSize: { width: 200, height: 40 },
+  hidden: true,
 }
-export default nodeConfig;
+export default nodeOptions;

@@ -1,34 +1,48 @@
 import { FC } from "react";
-import { Node, StringExt } from "@antv/x6";
+import { Graph, Node } from "@antv/x6";
 import ChoiceConfig from "../nodes/Choice";
 import SwitchConfig from "../nodes/Switch";
 import LoopConfig from "../nodes/Loop";
 import StartConfig from "../nodes/Start";
-
 import DataProcessingConfig from "../nodes/DataProcessing";
-
 export interface BaseNodeModel {
   id: string;
   type: string;
   name: string;
 }
-export type NodeOptionsForm = FC<{
-  sourceNode: Node;
-  onSubmit: (options: { [key: string]: any }) => void;
-  onCancel: () => void;
-}>;
+export interface INode {
+  id: string;
+  shape: string;
+  width: 250;
+  height: 40;
+  data: BaseNodeModel;
+  version: number;
+}
+
 export type NodePropertyForm = FC<{
   sourceNode: Node;
 }>;
 export type NodeComponent = FC<{ node: Node }>;
-export interface NodeConfig {
+export interface NodeOptions {
   type: string;
   name: string;
   component: NodeComponent;
-  nodeSize: { width: number; height: number };
+  nodeSize: {
+    width: number;
+    height: number;
+    paddingTop?: number;
+    paddingBottom?: number;
+    paddingLeft?: number;
+    paddingRight?: number;
+  };
   propertyForm?: NodePropertyForm;
   hidden?: boolean;
+  afterCreate?: (node: Node, graph: Graph) => void;
+  tools?: any[];
 }
+
+export type NodeConfig = NodeOptions;
+
 export interface NodeMetas {
   [type: string]: NodeConfig;
 }
@@ -45,6 +59,13 @@ export function getConfig<T extends keyof Config>(key: T): Config[T] {
 }
 export async function loadConfig(): Promise<Config> {
   config.nodeMetas = {
+    Root: {
+      type: "Root",
+      name: "Root",
+      component: () => null,
+      nodeSize: { width: 100, height: 100 },
+      hidden: true,
+    },
     Choice: ChoiceConfig,
     Switch: SwitchConfig,
     Loop: LoopConfig,
@@ -52,22 +73,4 @@ export async function loadConfig(): Promise<Config> {
     DataProcessing: DataProcessingConfig,
   };
   return config;
-}
-export async function loadData(): Promise<{ nodes: Array<any> }> {
-  const id = "DataProcessing-0";
-  return {
-    nodes: [
-      {
-        id,
-        shape: "dag-node",
-        width: 250,
-        height: 40,
-        data: {
-          id,
-          type: "DataProcessing",
-          name: "数据加工",
-        },
-      },
-    ],
-  };
 }

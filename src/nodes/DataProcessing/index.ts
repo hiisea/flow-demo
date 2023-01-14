@@ -1,12 +1,12 @@
-import {NodeConfig}  from '../../core';
+import { NodeOptions } from "../../core";
 import Node from './Node';
 import PropertyForm from './PropertyForm';
 
-const nodeConfig: NodeConfig = {
+const nodeOptions: NodeOptions = {
   type: 'DataProcessing',
   name: '数据加工',
-  nodeSize: { width: 250, height: 40 },
   component: Node,
+  nodeSize: {width: 250, height:40 },
   propertyForm: PropertyForm
 }
-export default nodeConfig;
+export default nodeOptions;
