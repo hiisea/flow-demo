@@ -1,6 +1,6 @@
 import { Cell, Graph, Node, StringExt } from "@antv/x6";
 import { getConfig, INode } from "./base";
-import { Dagre, DagreConfig } from "./dagre";
+import { Dagre } from "./layout";
 import debounce from "lodash.debounce";
 
 //g.setNode("swilliams",  { label: "Saul Williams", width: 160, height: 100 });
@@ -84,8 +84,8 @@ function layoutSize(
     const size = node.getSize();
     const posOrigin = g.getLayout(node.id);
     const pos = {
-      x: paddingLeft + posOrigin.x - size.width / 2,
-      y: paddingTop + posOrigin.y - size.height / 2,
+      x: paddingLeft + posOrigin.x,
+      y: paddingTop + posOrigin.y,
     };
     width = Math.max(width, pos.x + size.width + paddingRight);
     height = Math.max(height, pos.y + size.height + paddingBottom);

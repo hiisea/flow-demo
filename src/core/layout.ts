@@ -11,7 +11,6 @@ type InputNodeData = {
   id: string;
   width: number;
   height: number;
-  weight?: number;
 };
 type OutputEdgeData = { source: string; target: string };
 
@@ -22,7 +21,7 @@ export const DagreConfig = {
   //rankdir: 'LR'
 };
 
-export class Dagre {
+export class Dagre2 {
   private graph: any;
   private outputNodes?: OutputNodeData[];
   private outputEdges?: OutputEdgeData[];
@@ -71,62 +70,118 @@ export class Dagre {
   }
 }
 
+type InternalNode = InputNodeData & {
+  x?: number;
+  y?: number;
+  next?: string;
+  prev?: string;
+  group?: string[];
+  groupWidth?: number;
+};
+export class Dagre {
+  private inputNodes: InputNodeData[] = [];
+  private inputEdges: { source: string; target: string }[] = [];
+  private outputNodesMap?: Record<string, OutputNodeData>;
+
+  constructor(private grapX: number = 50, private grapY: number = 50) {}
+
+  setNode(data: InputNodeData) {
+    this.inputNodes.push({ ...data });
+  }
+
+  setEdge(source: string, target: string) {
+    this.inputEdges.push({ source, target });
+  }
+
+  getLayout(): Record<string, OutputNodeData>;
+  getLayout(id: string): OutputNodeData;
+  getLayout(id?:string):any {
+    if (!this.outputNodesMap) {
+      const nodeMap = this.inputNodes.reduce((obj, cur) => {
+        obj[cur.id] = cur;
+        return obj;
+      }, {} as { [id: string]: InternalNode });
+      this.inputEdges.forEach((edge) => {
+        nodeMap[edge.source].next = edge.target;
+        nodeMap[edge.target].prev = edge.source;
+      });
+      const groups: Array<{ ids: string[]; width: number }> = [];
+      this.inputNodes.forEach((node: InternalNode) => {
+        if (!node.prev) {
+          groups.push({ ids: [node.id], width: node.width });
+        }
+      });
+      groups.forEach((group) => {
+        const widths: number[] = [group.width];
+        let nextNodeId = nodeMap[group.ids[0]].next;
+        while (nextNodeId) {
+          const nextNode = nodeMap[nextNodeId];
+          widths.push(nextNode.width);
+          group.ids.push(nextNodeId);
+          nextNodeId = nextNode.next;
+        }
+        group.width = Math.max(...widths);
+      });
+      let dx = 0;
+      groups.forEach((group) => {
+        let dy = 0;
+        const groupWidth = group.width;
+        group.ids.forEach((id) => {
+          const node = nodeMap[id];
+          node.x = dx + (groupWidth - node.width) / 2;
+          node.y = dy;
+          dy += node.height+this.grapY;
+        });
+        dx += groupWidth+this.grapX;
+      });
+      this.outputNodesMap = Object.keys(nodeMap).reduce((obj, id) => {
+        const { width, height, x = 0, y = 0 } = nodeMap[id];
+        obj[id] = { id, width, height, x, y };
+        return obj;
+      }, {} as Record<string, OutputNodeData>);
+    }
+    if (id) {
+      return this.outputNodesMap[id];
+    }
+    return this.outputNodesMap;
+  }
+}
+
 const dagre1 = new Dagre();
 
 dagre1.setNode({
-  id: "Switch-2",
+  id: "a",
   width: 200,
   height: 40,
-  weight: 3,
 });
 dagre1.setNode({
-  id: "Switch-3",
+  id: "b",
   width: 200,
   height: 40,
-  weight: 2,
 });
 dagre1.setNode({
-  id: "Switch-4",
+  id: "c",
   width: 200,
   height: 40,
-  weight: 1,
 });
 dagre1.setNode({
-  id: "DataProcessing-5",
-  width: 250,
+  id: "a1",
+  width: 100,
   height: 40,
 });
 dagre1.setNode({
-  id: "DataProcessing-6",
-  width: 250,
+  id: "b1",
+  width: 300,
   height: 40,
 });
 dagre1.setNode({
-  id: "DataProcessing-7",
-  width: 250,
+  id: "b2",
+  width: 100,
   height: 40,
 });
-dagre1.setNode({
-  id: "DataProcessing-8",
-  width: 250,
-  height: 40,
-});
-dagre1.setNode({
-  id: "DataProcessing-9",
-  width: 250,
-  height: 40,
-});
-dagre1.setNode({
-  id: "DataProcessing-10",
-  width: 250,
-  height: 40,
-});
-dagre1.setEdge("Switch-2", "DataProcessing-5");
-dagre1.setEdge("DataProcessing-5", "DataProcessing-9");
-dagre1.setEdge("Switch-3", "DataProcessing-6");
-dagre1.setEdge("Switch-4", "DataProcessing-7");
-dagre1.setEdge("DataProcessing-7", "DataProcessing-8");
-dagre1.setEdge("DataProcessing-8", "DataProcessing-10");
+dagre1.setEdge("a", "a1");
+dagre1.setEdge("b", "b1");
+dagre1.setEdge("b1", "b2");
 
 console.log("====darge1=====");
 console.log(JSON.stringify(dagre1.getLayout(), null, "  "));
