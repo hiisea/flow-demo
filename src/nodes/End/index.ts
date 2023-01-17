@@ -1,13 +1,12 @@
 import {NodeOptions}  from '../../core';
 import Node from './Node';
-import PropertyForm from './PropertyForm';
 
 const nodeOptions: NodeOptions = {
-  type: 'Switch',
-  name: '分支',
+  type: 'End',
+  name: '结束',
   component: Node,
-  nodeSize: { width: 200, height: 40 },
+  nodeSize: { width: 150, height: 35 },
   hidden: true,
-  propertyForm: PropertyForm
+  preventDeletion: true,
 }
 export default nodeOptions;

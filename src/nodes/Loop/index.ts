@@ -3,11 +3,13 @@ import Node from './Node';
 
 const nodeOptions: NodeOptions = {
   type: 'Loop',
-  name: '循环体',
+  name: '循环执行',
   component: Node,
-  nodeSize: {width: 200, height:100, paddingBottom: 80 },
+  nodeSize: {paddingTop:0, paddingBottom: 0 },
+  tools: [],
   afterCreate: (node, graph) => {
-    createNode(graph, node, "Start", {name: '开始循环'});
+    const startNode = createNode(graph, node, "Start", {name: '循环开始'});
+    createNode(graph, startNode, "End", {name: '循环结束'});
   }
 }
 export default nodeOptions;

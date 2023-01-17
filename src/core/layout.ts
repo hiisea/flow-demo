@@ -78,12 +78,12 @@ type InternalNode = InputNodeData & {
   group?: string[];
   groupWidth?: number;
 };
-export class Dagre {
+export class DagreLayout {
   private inputNodes: InputNodeData[] = [];
   private inputEdges: { source: string; target: string }[] = [];
   private outputNodesMap?: Record<string, OutputNodeData>;
 
-  constructor(private grapX: number = 50, private grapY: number = 50) {}
+  constructor(private grapX: number = 50, private grapY: number = 60) {}
 
   setNode(data: InputNodeData) {
     this.inputNodes.push({ ...data });
@@ -147,7 +147,7 @@ export class Dagre {
   }
 }
 
-const dagre1 = new Dagre();
+const dagre1 = new DagreLayout();
 
 dagre1.setNode({
   id: "a",

@@ -1,22 +1,9 @@
-import { Cell, Graph, Node, StringExt } from "@antv/x6";
-import { getConfig, INode } from "./base";
-import { Dagre } from "./layout";
-import debounce from "lodash.debounce";
+import { Cell, Graph, Node } from "@antv/x6";
+import { getConfig, INode, IEdge } from "./base";
+import { DagreLayout } from "./layout";
+import "./DagNode";
 
-//g.setNode("swilliams",  { label: "Saul Williams", width: 160, height: 100 });
-// g.setNode("bpitt",      { label: "Brad Pitt",     width: 108, height: 100 });
-// g.setNode("hford",      { label: "Harrison Ford", width: 168, height: 100 });
-// g.setNode("lwilson",    { label: "Luke Wilson",   width: 144, height: 100 });
-// g.setNode("kbacon",     { label: "Kevin Bacon",   width: 121, height: 100 });
-
-// Add edges to the graph.
-//g.setEdge("kspacey",   "swilliams");
-// g.setEdge("swilliams", "kbacon");
-// g.setEdge("bpitt",     "kbacon");
-// g.setEdge("hford",     "lwilson");
-// g.setEdge("lwilson",   "kbacon");
-
-let uid = 1;
+let nid = 1;
 
 // function listToTree(nodeList: Node[]) {
 //   //const root: {node: Node, children: Node[]} = {node: nodeList[0], children:[]};
@@ -32,11 +19,31 @@ let uid = 1;
 //   });
 // }
 
+function addEdge(
+  graph: Graph,
+  source: [string, string],
+  target: [string, string],
+  options?: any
+) {
+  return graph.addEdge({
+    id: `${source[0]}->${target[0]}`,
+    shape: "dag-edge",
+    source: {
+      cell: source[0],
+      port: source[1],
+    },
+    target: {
+      cell: target[0],
+      port: target[1],
+    },
+    ...options,
+  });
+}
 function layoutSize(
   parentNode: Node,
   posMap: { [key: string]: { x: number; y: number } }
 ) {
-  const g = new Dagre();
+  const g = new DagreLayout();
   const children = parentNode.getChildren() || [];
   const childrenNodes: Node[] = [];
   children.forEach((cell) => {
@@ -122,14 +129,14 @@ function layoutIndex(
   sourceNode: Node,
   indexMap: { [key: string]: number[] }
 ) {
-  const zIndex = sourceNode.getZIndex() || 2;
+  let zIndex = sourceNode.getZIndex() || 1;
+  zIndex = zIndex === 1 ? 2 : zIndex;
   if (!indexMap[sourceNode.id]) {
     indexMap[sourceNode.id] = [zIndex];
   }
   const vIndex: number[] = [...indexMap[sourceNode.id]];
   const eIndex = vIndex.pop() as number;
-  const outEdges = graph.getOutgoingEdges(sourceNode) || [];
-  outEdges.forEach((edge) => {
+  (graph.getOutgoingEdges(sourceNode) || []).forEach((edge) => {
     // const eid = [
     //   (edge.source as any).cell,
     //   "->",
@@ -161,6 +168,22 @@ function layoutIndex(
   });
 }
 
+function debounce<T extends Function>(callbak: T, timeout = 0) {
+  let timer: NodeJS.Timeout | null = null;
+  return ((...args: any[]) => {
+    if (!timer) {
+      const graph = args[0] as Graph;
+      //graph.freeze();
+      graph.view.viewport.style.visibility = "hidden";
+      timer = setTimeout(() => {
+        callbak(...args);
+        //graph.unfreeze();
+        graph.view.viewport.style.visibility = "visible";
+        timer = null;
+      }, timeout);
+    }
+  }) as any;
+}
 export const updateLayout: (graph: Graph) => void = debounce((graph: Graph) => {
   console.log("====update=====");
   const children: Cell[] = [];
@@ -194,8 +217,8 @@ export const updateLayout: (graph: Graph) => void = debounce((graph: Graph) => {
   layoutIndex(graph, rootNode!, indexData);
   const indexMap = Object.entries(indexData)
     .sort((a, b) => {
-      const a1 = [...a[1]];
-      const b1 = [...b[1]];
+      const a1: number[] = [...a[1]];
+      const b1: number[] = [...b[1]];
       let c = a1.shift() || 0;
       let d = b1.shift() || 0;
       while (c || d) {
@@ -219,7 +242,7 @@ export const updateLayout: (graph: Graph) => void = debounce((graph: Graph) => {
   layoutSize(root, posMap);
   //console.log(JSON.stringify(posMap, null, "  "));
   layoutPosition(root, posMap);
-}, 10);
+}, 0);
 
 export function createNode(
   graph: Graph,
@@ -235,102 +258,156 @@ export function createNode(
     tools = [],
     afterCreate,
   } = nodeMetas[newNodeType];
-  const id = `${newNodeType}-${uid++}`;
-  const targetNode = graph.addNode({
-    id,
+  const newNodeId = `${newNodeType}-${nid++}`;
+  const newNode = graph.addNode({
+    id: newNodeId,
     shape: "dag-node",
     width: nodeSize.width,
     height: nodeSize.height,
     data: {
-      id,
+      id: newNodeId,
       type,
-      name,
+      name: name+'-'+nid,
       ...newNodeData,
     },
-    tools: [
-      {
-        name: "button-remove",
-        args: {
-          x: 12,
-          y: 15,
-        },
-      },
-      ...tools,
-    ],
+    tools,
   });
+
   if (newNodeType === "Switch" || newNodeType === "Start") {
-    const targetEdge1 = graph.addEdge({
-      shape: "dag-edge",
-      source: {
-        cell: sourceNode,
-        port: "in",
-      },
-      target: {
-        cell: targetNode,
-        port: "in",
-      },
-    });
-    const targetEdge2 = graph.addEdge({
-      shape: "dag-edge",
-      source: {
-        cell: targetNode,
-        port: "out",
-      },
-      target: {
-        cell: sourceNode,
-        port: "out",
-      },
-    });
-    sourceNode.addChild(targetNode);
+    const targetEdge1 = addEdge(
+      graph,
+      [sourceNode.id, "in"],
+      [newNode.id, "in"],
+      {
+        router: newNodeType === "Start" ? "normal" : "dag",
+        attrs: {
+          line: {
+            targetMarker: newNodeType === "Start" ? null : "block",
+          },
+        },
+      }
+    );
+    const targetEdge2 = addEdge(
+      graph,
+      [newNode.id, "out"],
+      [sourceNode.id, "out"],
+      {
+        attrs: {
+          line: {
+            targetMarker: newNodeType === "Switch" ? null : "block",
+          },
+        },
+      }
+    );
+    sourceNode.addChild(newNode);
     sourceNode.addChild(targetEdge1);
     sourceNode.addChild(targetEdge2);
     //updateLayout(graph);
-    return targetNode;
+    return newNode;
   }
   const [originEdge] = (graph.getOutgoingEdges(sourceNode) || []).filter(
     (edge) => {
       return (edge.source as any).port === "out";
     }
   );
-  //const originNextNode = originEdge?.getTargetNode();
-  //console.log("node", originNextNode);
-  const targetEdge = graph.addEdge({
-    //id: `${sourceNode.id}->${targetNode.id}`,
-    shape: "dag-edge",
-    source: {
-      cell: sourceNode,
-      port: "out",
-    },
-    target: {
-      cell: targetNode,
-      port: "in",
-    },
-  });
+  const newEdge = addEdge(graph, [sourceNode.id, "out"], [newNode.id, "in"]);
   if (originEdge) {
-    originEdge.setSource({ cell: targetNode.id, port: "out" });
+    const originParent = originEdge.getParent();
+    const originTarget = originEdge.target as { cell: string; port: string };
+    originEdge.remove();
+    const newOriginEdge = addEdge(
+      graph,
+      [newNode.id, "out"],
+      [originTarget.cell, originTarget.port]
+    );
+    if (originParent) {
+      originParent.addChild(newOriginEdge);
+    }
   }
   const parent = sourceNode.getParent();
   if (parent) {
-    parent.addChild(targetNode);
-    parent.addChild(targetEdge);
+    parent.addChild(newNode);
+    parent.addChild(newEdge);
   }
-  afterCreate && afterCreate(targetNode, graph);
-  return targetNode;
+  afterCreate && afterCreate(newNode, graph);
+  return newNode;
+}
+function getPrevNode(
+  graph: Graph,
+  node: Node
+):
+  | {
+      cell: string;
+      port: string;
+    }
+  | undefined {
+  const [prevNode] = (graph.getIncomingEdges(node) || [])
+    .filter((edge) => {
+      return (edge.target as any).port === "in";
+    })
+    .map((edge) => edge.source as { cell: string; port: string });
+  return prevNode;
+}
+function getNextNode(
+  graph: Graph,
+  node: Node
+):
+  | {
+      cell: string;
+      port: string;
+    }
+  | undefined {
+  const [nextNode] = (graph.getOutgoingEdges(node) || [])
+    .filter((edge) => {
+      return (edge.source as any).port === "out";
+    })
+    .map((edge) => edge.target as { cell: string; port: string });
+  return nextNode;
+}
+export function deleteNode(graph: Graph, node: Node) {
+  let nextNode = getNextNode(graph, node);
+  const prevNode = getPrevNode(graph, node);
+  if (node.getData().type === "Switch") {
+    while (nextNode) {
+      let nextNodeIns = graph.getCellById(nextNode.cell) as Node;
+      if (node.getParent() === nextNodeIns) {
+        nextNode = undefined;
+      } else {
+        nextNode = getNextNode(graph, nextNodeIns);
+        nextNodeIns.remove();
+      }
+    }
+    node.remove();
+  } else {
+    node.remove();
+    if (prevNode && nextNode) {
+      addEdge(
+        graph,
+        [prevNode.cell, prevNode.port],
+        [nextNode.cell, nextNode.port]
+      );
+    }
+  }
+}
+export function selectNode(graph: Graph, node: Node | null) {
+  graph.resetSelection(node ? [node] : undefined);
 }
 export function initGraph(container: any, data: { nodes: Array<any> }) {
   const graph: Graph = new Graph({
     container,
+    grid:true,
+    //scroller: true,
     selecting: {
       enabled: true,
     },
     panning: true,
     interacting: {
-      nodeMovable: true,
+      nodeMovable: false,
     },
     connecting: {
       allowBlank: false,
       router: {
-        name: "manhattan",
+        name: "dag",
         args: {
           padding: 20,
           startDirections: ["bottom"],
@@ -342,11 +419,41 @@ export function initGraph(container: any, data: { nodes: Array<any> }) {
   graph.fromJSON(data);
   updateLayout(graph);
   graph.on("node:added", () => {
-    console.log(11111);
     updateLayout(graph);
   });
   graph.on("node:removed", () => {
     updateLayout(graph);
+  });
+  graph.on("node:selected", (args: { cell: Cell; node: Node }) => {
+    const nodeMetas = getConfig("nodeMetas");
+    const nodeType: string = args.node.getData().type;
+    const nodeConfig = nodeMetas[nodeType];
+    const zIndex = args.node.getZIndex();
+    if (
+      zIndex !== 2 &&
+      !nodeConfig.preventDeletion &&
+      !args.node.hasTool("delete-node")
+    ) {
+      args.node.addTools([
+        {
+          name: "delete-node",
+          args: {
+            x: "100%",
+            y: 14,
+            offset: {
+              x: -15,
+              y: 0,
+            },
+          },
+        },
+      ]);
+    }
+  });
+  graph.on("node:unselected", (args: { cell: Cell; node: Node }) => {
+    args.cell.removeTool("delete-node");
+  });
+  graph.on("node:createSwitchNode", ({ node }: { node: Node }) => {
+    createNode(graph, node, "Switch");
   });
   // graph.on("cell:mouseenter", ({ cell }) => {
   //   if (cell.isNode()) {
@@ -419,7 +526,7 @@ export function initGraph(container: any, data: { nodes: Array<any> }) {
   // });
   return graph;
 }
-export async function loadData(): Promise<{ nodes: INode[] }> {
+export async function loadData(): Promise<{ nodes: INode[]; edges: IEdge[] }> {
   const id = "DataProcessing-0";
   return {
     nodes: [
@@ -432,8 +539,34 @@ export async function loadData(): Promise<{ nodes: INode[] }> {
         data: {
           id,
           type: "DataProcessing",
-          name: "数据加工",
+          name: "数据加工-0",
         },
+      },
+      {
+        id: "Return-0",
+        shape: "dag-node",
+        width: 200,
+        height: 40,
+        version: 0,
+        data: {
+          id,
+          type: "Return",
+          name: "结束",
+        },
+      },
+    ],
+    edges: [
+      {
+        id: "DataProcessing-0->Return-0",
+        source: {
+          cell: "DataProcessing-0",
+          port: "out",
+        },
+        target: {
+          cell: "Return-0",
+          port: "in",
+        },
+        shape: "dag-edge",
       },
     ],
   };

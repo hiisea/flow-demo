@@ -5,7 +5,7 @@ const Component: NodeComponent = ({ node }) => {
 
   const model = node.getData() as Model;
 
-  return <>{`${model.type}-${model.name}-${model.id.split('-').pop()}`}</>;
+  return <>{model.name}</>;
 };
 
 export default Component;

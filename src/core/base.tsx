@@ -4,6 +4,8 @@ import ChoiceConfig from "../nodes/Choice";
 import SwitchConfig from "../nodes/Switch";
 import LoopConfig from "../nodes/Loop";
 import StartConfig from "../nodes/Start";
+import EndConfig from "../nodes/End";
+import ReturnConfig from "../nodes/Return";
 import DataProcessingConfig from "../nodes/DataProcessing";
 export interface BaseNodeModel {
   id: string;
@@ -13,14 +15,22 @@ export interface BaseNodeModel {
 export interface INode {
   id: string;
   shape: string;
-  width: 250;
-  height: 40;
+  width: number;
+  height: number;
   data: BaseNodeModel;
   version: number;
 }
 
+export interface IEdge {
+  id: string;
+  source: { cell: string; port: string };
+  target: { cell: string; port: string };
+  shape: string;
+}
+
 export type NodePropertyForm = FC<{
-  sourceNode: Node;
+  node: Node;
+  model: BaseNodeModel;
 }>;
 export type NodeComponent = FC<{ node: Node }>;
 export interface NodeOptions {
@@ -28,8 +38,8 @@ export interface NodeOptions {
   name: string;
   component: NodeComponent;
   nodeSize: {
-    width: number;
-    height: number;
+    width?: number;
+    height?: number;
     paddingTop?: number;
     paddingBottom?: number;
     paddingLeft?: number;
@@ -37,6 +47,7 @@ export interface NodeOptions {
   };
   propertyForm?: NodePropertyForm;
   hidden?: boolean;
+  preventDeletion?: boolean;
   afterCreate?: (node: Node, graph: Graph) => void;
   tools?: any[];
 }
@@ -63,13 +74,15 @@ export async function loadConfig(): Promise<Config> {
       type: "Root",
       name: "Root",
       component: () => null,
-      nodeSize: { width: 100, height: 100 },
+      nodeSize: {},
       hidden: true,
     },
     Choice: ChoiceConfig,
     Switch: SwitchConfig,
     Loop: LoopConfig,
     Start: StartConfig,
+    End: EndConfig,
+    Return: ReturnConfig,
     DataProcessing: DataProcessingConfig,
   };
   return config;

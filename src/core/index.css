@@ -11,11 +11,11 @@
 .x6-node-selected .xdag-node {
   box-shadow: 0 0 0 4px #d4e8fe;
 }
-.xdag-plus-dag {
+.xdag-plus-node {
   /* visibility: hidden; */
   position: absolute;
   margin-left: -8px;
-  bottom: -25px;
+  bottom: -30px;
   left: 50%;
   width: 16px;
   height: 16px;
@@ -34,12 +34,30 @@
   border-radius: 10px;
   padding: 5px 10px;
 }
-.xdag-Choice{
+.xdag-node.xdag-Choice{
   border: none;
   border-color: #70db9b;
   background: rgba(171, 255, 150, 0);
 }
-.xdag-Loop{
-  border-color: #dbdb70;
+.xdag-node.xdag-Loop{
+  border-color: #9e9e37;
   background: rgba(255, 255, 150, 0.5);
+}
+.xdag-node.xdag-Start{
+  border: none;
+  background-color: #9e9e37;
+  color: #fff;
+  border-radius: 0 0 5px 5px;
+}
+.xdag-node.xdag-End{
+  border: none;
+  background-color: #9e9e37;
+  color: #fff;
+  border-radius: 5px 5px 0 0;
+}
+.xdag-node.xdag-Switch{
+  background: #ebffe1;
+}
+.xdag-plus-node.xdag-Choice{
+  bottom: -16px;
 }

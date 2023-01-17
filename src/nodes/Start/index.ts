@@ -5,7 +5,8 @@ const nodeOptions: NodeOptions = {
   type: 'Start',
   name: '开始',
   component: Node,
-  nodeSize: { width: 200, height: 40 },
+  nodeSize: { width: 150, height: 35 },
   hidden: true,
+  preventDeletion: true,
 }
 export default nodeOptions;

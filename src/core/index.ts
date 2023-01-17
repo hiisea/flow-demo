@@ -1,2 +1,3 @@
-export * from './base';
-export {createNode} from './funs';
+export * from "./base";
+export { createNode, initGraph, updateLayout, loadData, selectNode } from "./funs";
+export { NodePropertyPanel } from "./NodePropertyPanel";
