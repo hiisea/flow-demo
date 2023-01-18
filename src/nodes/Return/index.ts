@@ -8,5 +8,6 @@ const nodeOptions: NodeOptions = {
   nodeSize: { width: 200, height: 40 },
   hidden: true,
   preventDeletion: true,
+  fixed: true,
 }
 export default nodeOptions;

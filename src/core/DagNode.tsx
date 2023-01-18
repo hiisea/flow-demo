@@ -3,6 +3,7 @@ import classnames from "classnames";
 import { MenuProps, Dropdown } from "antd";
 import { Graph, Node, CellView } from "@antv/x6";
 import "@antv/x6-react-shape";
+import { PlusCircleOutlined } from "@ant-design/icons";
 import { BaseNodeModel, getConfig } from "./base";
 import { createNode, deleteNode } from "./funs";
 
@@ -28,28 +29,36 @@ const DagNodeBase: FC<Props> = ({ node }) => {
   const onMenuClick: MenuProps["onClick"] = useCallback(
     (e) => {
       const nodeType: string = e.key;
-      createNode(node?.model as any, node!, nodeType);
+      createNode(node?.model?.graph!, node!, nodeType);
     },
     [node]
   );
   const menu = useMemo(() => {
     return { items: menuItems, onClick: onMenuClick };
   }, []);
-  console.log(nodeType, nodeConfig.propertyForm)
+  console.log(nodeType, nodeConfig.propertyForm);
   return (
     <>
-      <div className={classnames("xdag-node", `xdag-${model.type}`, {'xdag-options': nodeConfig.propertyForm})}>
+      <div
+        className={classnames("xdag-node", `xdag-${model.type}`, {
+          "xdag-options": nodeConfig.propertyForm,
+        })}
+      >
         <nodeConfig.component node={node!} />
       </div>
-      {nodeType !== 'End' && nodeType !== 'Return' && <Dropdown menu={menu} trigger={MenuTrigger}>
-        <div className={classnames("xdag-plus-node", `xdag-${model.type}`)} />
-      </Dropdown>}
+      {nodeType !== "End" && nodeType !== "Return" && (
+        <Dropdown menu={menu} trigger={MenuTrigger}>
+          <PlusCircleOutlined
+            className={classnames("xdag-plus-node", `xdag-${model.type}`)}
+          />
+        </Dropdown>
+      )}
     </>
   );
 };
 
 export const DagNode = memo(DagNodeBase, (prev, next) => {
-  console.log('shouldComponentUpdate', Boolean(next.node?.hasChanged("data")));
+  console.log("shouldComponentUpdate", Boolean(next.node?.hasChanged("data")));
   return !next.node?.hasChanged("data");
 });
 

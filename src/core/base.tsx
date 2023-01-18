@@ -48,6 +48,7 @@ export interface NodeOptions {
   propertyForm?: NodePropertyForm;
   hidden?: boolean;
   preventDeletion?: boolean;
+  fixed?: boolean;
   afterCreate?: (node: Node, graph: Graph) => void;
   tools?: any[];
 }

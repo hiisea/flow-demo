@@ -1,5 +1,5 @@
 import { Cell, Graph, Node } from "@antv/x6";
-import { getConfig, INode, IEdge } from "./base";
+import { getConfig, INode, IEdge, BaseNodeModel } from "./base";
 import { DagreLayout } from "./layout";
 import "./DagNode";
 
@@ -19,25 +19,46 @@ let nid = 1;
 //   });
 // }
 
-function addEdge(
+function createEdge(
   graph: Graph,
-  source: [string, string],
-  target: [string, string],
-  options?: any
+  source: [string | Node, string],
+  target: [string | Node, string]
 ) {
-  return graph.addEdge({
-    id: `${source[0]}->${target[0]}`,
+  const sourceId = typeof source[0] === "string" ? source[0] : source[0].id;
+  const targetId = typeof target[0] === "string" ? target[0] : target[0].id;
+  const sourceNode =
+    typeof source[0] === "string" ? graph.getCellById(source[0]) : source[0];
+  const targetNode =
+    typeof target[0] === "string" ? graph.getCellById(target[0]) : target[0];
+  const sourcePort = source[1];
+  const targetPort = target[1];
+  const sourceModel = sourceNode.getData() as BaseNodeModel;
+  const targetModel = targetNode.getData() as BaseNodeModel;
+  const edge = {
+    id: `${sourceId}->${targetId}`,
     shape: "dag-edge",
     source: {
-      cell: source[0],
-      port: source[1],
+      cell: sourceId,
+      port: sourcePort,
     },
     target: {
-      cell: target[0],
-      port: target[1],
+      cell: targetId,
+      port: targetPort,
     },
-    ...options,
-  });
+    router: "dag",
+    attrs: {
+      line: {
+        targetMarker: "block" as "block" | null,
+      },
+    },
+  };
+  if (targetModel.type === "Start" || sourceModel.type === "End") {
+    edge.attrs.line.targetMarker = null;
+    edge.router = "normal";
+  } else if (sourcePort === "out" && targetPort === "out") {
+    edge.attrs.line.targetMarker = null;
+  }
+  return graph.addEdge(edge);
 }
 function layoutSize(
   parentNode: Node,
@@ -64,18 +85,6 @@ function layoutSize(
       }
     }
   });
-
-  //   console.log("========");
-  //   if (parentNode.id && parentNode.id.startsWith("Choice")) {
-  //     g.nodes().forEach(function (v: any) {
-  //       console.log("Node " + v + ": " + JSON.stringify(g.node(v)));
-  //     });
-  //     g.edges().forEach(function (e: any) {
-  //       console.log(
-  //         "Edge " + e.v + " -> " + e.w + ": " + JSON.stringify(g.edge(e))
-  //       );
-  //     });
-  //   }
   const nodeMetas = getConfig("nodeMetas");
   const parentType = parentNode.getData().type;
   const { nodeSize } = nodeMetas[parentType];
@@ -267,37 +276,18 @@ export function createNode(
     data: {
       id: newNodeId,
       type,
-      name: name+'-'+nid,
+      name: name + "-" + nid,
       ...newNodeData,
     },
     tools,
   });
 
   if (newNodeType === "Switch" || newNodeType === "Start") {
-    const targetEdge1 = addEdge(
+    const targetEdge1 = createEdge(graph, [sourceNode, "in"], [newNode, "in"]);
+    const targetEdge2 = createEdge(
       graph,
-      [sourceNode.id, "in"],
-      [newNode.id, "in"],
-      {
-        router: newNodeType === "Start" ? "normal" : "dag",
-        attrs: {
-          line: {
-            targetMarker: newNodeType === "Start" ? null : "block",
-          },
-        },
-      }
-    );
-    const targetEdge2 = addEdge(
-      graph,
-      [newNode.id, "out"],
-      [sourceNode.id, "out"],
-      {
-        attrs: {
-          line: {
-            targetMarker: newNodeType === "Switch" ? null : "block",
-          },
-        },
-      }
+      [newNode, "out"],
+      [sourceNode, "out"]
     );
     sourceNode.addChild(newNode);
     sourceNode.addChild(targetEdge1);
@@ -310,14 +300,14 @@ export function createNode(
       return (edge.source as any).port === "out";
     }
   );
-  const newEdge = addEdge(graph, [sourceNode.id, "out"], [newNode.id, "in"]);
+  const newEdge = createEdge(graph, [sourceNode, "out"], [newNode, "in"]);
   if (originEdge) {
     const originParent = originEdge.getParent();
     const originTarget = originEdge.target as { cell: string; port: string };
     originEdge.remove();
-    const newOriginEdge = addEdge(
+    const newOriginEdge = createEdge(
       graph,
-      [newNode.id, "out"],
+      [newNode, "out"],
       [originTarget.cell, originTarget.port]
     );
     if (originParent) {
@@ -381,7 +371,7 @@ export function deleteNode(graph: Graph, node: Node) {
   } else {
     node.remove();
     if (prevNode && nextNode) {
-      addEdge(
+      createEdge(
         graph,
         [prevNode.cell, prevNode.port],
         [nextNode.cell, nextNode.port]
@@ -395,7 +385,7 @@ export function selectNode(graph: Graph, node: Node | null) {
 export function initGraph(container: any, data: { nodes: Array<any> }) {
   const graph: Graph = new Graph({
     container,
-    grid:true,
+    grid: true,
     //scroller: true,
     selecting: {
       enabled: true,
@@ -403,6 +393,13 @@ export function initGraph(container: any, data: { nodes: Array<any> }) {
     panning: true,
     interacting: {
       nodeMovable: false,
+      // nodeMovable: (view) => {
+      //   const node = view.cell;
+      //   const zIndex = node.getZIndex();
+      //   const nodeModel = node.getData() as BaseNodeModel;
+      //   const nodeMetas = getConfig("nodeMetas");
+      //   return zIndex !== 2 && !nodeMetas[nodeModel.type].fixed;
+      // },
     },
     connecting: {
       allowBlank: false,
@@ -455,6 +452,7 @@ export function initGraph(container: any, data: { nodes: Array<any> }) {
   graph.on("node:createSwitchNode", ({ node }: { node: Node }) => {
     createNode(graph, node, "Switch");
   });
+  //graph.zoom(2);
   // graph.on("cell:mouseenter", ({ cell }) => {
   //   if (cell.isNode()) {
   //     cell.addTools([

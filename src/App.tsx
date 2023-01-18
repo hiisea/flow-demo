@@ -1,6 +1,6 @@
 import React from "react";
 import { Graph, Cell, Node } from "@antv/x6";
-import { Button, Layout } from "antd";
+import { Button, Layout, Space } from "antd";
 import {
   loadConfig,
   initGraph,
@@ -47,8 +47,10 @@ export default class Component extends React.Component<{}, State> {
       <>
         <Layout style={{ height: "100vh", display: "flex" }}>
           <Header>
-            <Button onClick={this.getData}>获取数据</Button>
-            <Button onClick={() => updateLayout(this.graph)}>重新布局</Button>
+            <Space>
+              <Button onClick={this.getData}>获取数据</Button>
+              <Button onClick={() => updateLayout(this.graph)}>重新布局</Button>
+            </Space>
           </Header>
           <Content ref={this.refContainer}></Content>
         </Layout>
